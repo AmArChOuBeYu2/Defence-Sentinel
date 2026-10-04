@@ -1,296 +1,322 @@
-# Defence Sentinel — Adaptive RF/ESM Radar Security System
+# Defence Sentinel — Adaptive RF/ESM & Hardware Radar Security System
 
-[![SIH 2026](https://img.shields.io/badge/SIH-2026--SIH26055-blue?style=flat-square)](https://www.sih.gov.in/)
-[![Node.js](https://img.shields.io/badge/Node.js-v24-green?style=flat-square&logo=node.js)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-4.5-646cff?style=flat-square&logo=vite)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![SIH 2026](https://img.shields.io/badge/SIH-2026--SIH26055-blue?style=for-the-badge&logo=shield)](https://www.sih.gov.in/)
+[![ESP32 Hardware](https://img.shields.io/badge/Hardware-ESP32%20%7C%20HC--SR04%20%7C%20ULN2003-red?style=for-the-badge&logo=microchip)](hardware/defense_sentinel_hardware/defense_sentinel_hardware.ino)
+[![Web Serial API](https://img.shields.io/badge/Serial-Web%20Serial%20115200--8N1-orange?style=for-the-badge)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API)
+[![Node.js](https://img.shields.io/badge/Node.js-v24-green?style=for-the-badge&logo=node.js)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18-61dafb?style=for-the-badge&logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-> **SIMULATION / PROTOTYPE — NOT FOR OPERATIONAL DEPLOYMENT**  
-> This system is a research prototype built for Smart India Hackathon 2026 (Problem Statement SIH26055).  
-> It is not connected to real cameras, biometric systems, military networks, or any operational security infrastructure.
+> **SIH 2026 Problem Statement SIH26055**: *Adaptive Scan Strategy for Electronic Warfare & Tactical Perimeter Defence*  
+> **Defence Sentinel** is a full-stack tactical defense platform combining **Physical Microcontroller Hardware (ESP32)**, **Real-time Web Serial Telemetry**, **Recency-Augmented UCB1 Multi-Armed Bandit Scheduling**, and a **7-Page Military Command & Control (C2) Suite**.
 
 ---
 
-## Table of Contents
+## 📷 Physical Hardware Prototype & Command Suite
+
+| **Physical ESP32 Sensor & Scanner Hardware Setup** | **Tactical C2 Command Scope & Telemetry** |
+| :---: | :---: |
+| ![ESP32 Physical Radar Hardware Prototype](docs/assets/hardware_prototype.jpg) | ![C2 Radar Dashboard Interface](docs/assets/radar_dashboard.png) |
+| *0°–180° Stepper Radar Scanner with Ultrasonic Distance, PIR, RFID, OLED & RGB Indicators* | *Interactive 360° & Sector Tactical Radar, Target Kinematics, ESM & Threat Panels* |
+
+---
+
+## 📋 Table of Contents
 
 - [Overview](#overview)
 - [System Architecture](#system-architecture)
+- [Hardware Prototype & Hardware Specifications](#hardware-prototype--hardware-specifications)
+  - [Component Wiring & Pinout Table](#component-wiring--pinout-table)
+  - [Web Serial Protocol Specification](#web-serial-protocol-specification)
+  - [Dual Operational Modes](#dual-operational-modes)
+- [Mathematical Engine — Recency-Augmented UCB1](#mathematical-engine--recency-augmented-ucb1)
 - [7-Page Command & Control Suite](#7-page-command--control-suite)
-- [Project Structure](#project-structure)
-- [Module 1 — ESM-ASTRA (Node.js Backend & Dashboard)](#module-1--esm-astra-nodejs-backend--dashboard)
-- [Module 2 — Radar Scanner (React Frontend)](#module-2--radar-scanner-react-frontend)
-- [Core Algorithm — Recency-Augmented UCB1](#core-algorithm--recency-augmented-ucb1)
-- [Multi-Sensor Fusion & Incident Response](#multi-sensor-fusion--incident-response)
-- [12-Step Integrated Demonstration](#12-step-integrated-demonstration)
-- [Quick Start](#quick-start)
-- [Automated & Live Acceptance Test Suite](#automated--live-acceptance-test-suite)
-- [API Reference](#api-reference)
-- [Disclaimer & Team](#disclaimer--team)
+- [Multi-Sensor Fusion & Threat Matrix](#multi-sensor-fusion--threat-matrix)
+- [12-Step Guided Demonstration](#12-step-guided-demonstration)
+- [Project Directory Layout](#project-directory-layout)
+- [Quick Start & Hardware Setup Guide](#quick-start--hardware-setup-guide)
+  - [1. ESP32 Firmware Flashing](#1-esp32-firmware-flashing)
+  - [2. C2 Backend Server (Port 8080)](#2-c2-backend-server-port-8080)
+  - [3. React Radar Scanner Frontend (Port 5173)](#3-react-radar-scanner-frontend-port-5173)
+- [Verification & Automated Test Suite](#verification--automated-test-suite)
+- [API Documentation](#api-documentation)
+- [License & Disclaimer](#license--disclaimer)
 
 ---
 
 ## Overview
 
-**Defence Sentinel** is an end-to-end tactical electronic warfare and situational awareness platform built for Smart India Hackathon 2026 (Problem Statement SIH26055: *Adaptive Scan Strategy for Electronic Warfare*).
+**Defence Sentinel** addresses the critical challenge of military spectrum and perimeter defense: traditional fixed or round-robin radar scanning fails against modern frequency-agile threats and multi-vector intrusions. 
 
-The system integrates:
-1. **Adaptive RF/ESM Scan Scheduling** — The primary mathematical contribution. A `Recency-Augmented UCB1` multi-armed bandit algorithm dynamically prioritizes RF dwell time across candidate radar bands, balancing exploration of unvisited frequencies with exploitation of bursty, frequency-agile threats.
-2. **Tactical Multi-Sensor Command & Control** — A comprehensive 7-page C2 interface unifying:
-   - 360° Perimeter Tactical Radar with moving kinematics and 450m breach boundary
-   - Real-time RF / ESM Spectrum Analyzer, Waterfall Spectrogram, and Burst Timeline
-   - Optical Context with 4 surveillance cameras, CV bounding boxes, and infrared view
-   - 4-Sensor Fusion Correlation Matrix with 7-step causal reasoning traces
-   - Adaptive Scheduler Diagnostics with Bayesian Beta distributions and ablation modes
-   - Analytics & 5-Scenario Comprehensive Benchmark engine with CSV/JSON/Report exports
-   - Multi-Sensor Simulation Control Center with execution controls, speed multipliers, and 12-step automated demo
-3. **Synchronized React Radar Scanner** — Modern React 18 / TypeScript frontend connected directly to the C2 WebSocket server.
+This repository provides a complete, dual-layer solution:
+1. **Physical Radar & Sensor Rig**: Built around an ESP32 microcontroller controlling a 180° sweeping stepper motor, HC-SR04 ultrasonic distance sensor, HC-SR501 PIR motion detector, MFRC522 RFID reader, SSD1306 OLED display, RGB alert LED, and Web Audio alert synthesizers communicating directly with the browser via the **Web Serial API**.
+2. **C2 Command & Control Simulation Engine**: Powered by Node.js, WebSockets, and React 18, featuring dynamic Recency-Augmented UCB1 multi-armed bandit scheduling, synthetic RF spectrum analysis, multi-camera CV optical tracking, 4-layer sensor fusion, and statistical benchmarking.
 
 ---
 
 ## System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   DEFENCE SENTINEL                                      │
-│                                                                                         │
-│  ┌───────────────────────────────────────────────────────────────────────────────────┐  │
-│  │                     MODULE 1: ESM-ASTRA SERVER (Port 8080)                         │  │
-│  │                                                                                   │  │
-│  │  ┌───────────────────────────────┐     ┌──────────────────────────────────────┐   │  │
-│  │  │ Recency-Augmented UCB1 Engine │     │ Multi-Sensor Simulation Engine       │   │  │
-│  │  │ Q(b) = μ̂_b + c·√(lnN/N_b)     │     │ - 7 Canonical Entities               │   │  │
-│  │  │        + λ·tanh(Δt_b/τ)       │     │ - 25 Hz Physics Tick & Kinematics    │   │  │
-│  │  └──────────────┬────────────────┘     │ - 4 Cameras (CAM-01 to CAM-04)       │   │  │
-│  │                 │                      │ - Incident Response & Alert Engine   │   │  │
-│  │                 ▼                      └──────────────────┬───────────────────┘   │  │
-│  │  ┌───────────────────────────────┐                        │                       │  │
-│  │  │ 5-Scenario Benchmark Runner   │                        ▼                       │  │
-│  │  │ Deterministic Mulberry32 PRNG │     ┌──────────────────────────────────────┐   │  │
-│  │  └───────────────────────────────┘     │ WebSocket C2 Server (/ws/c2)         │   │  │
-│  │                                        │ Broadcasts 20 Hz C2_FRAME telemetry  │   │  │
-│  │                                        └──────────┬────────────────┬──────────┘   │  │
-│  └───────────────────────────────────────────────────┼────────────────┼──────────────┘  │
-│                                                      │                │                 │
-│                                  WebSocket Stream    │                │                 │
-│                                                      ▼                ▼                 │
-│  ┌───────────────────────────────────────────────────────┐  ┌────────────────────────┐  │
-│  │ C2 Tactical Command Dashboard (http://localhost:8080) │  │ React Radar Scanner    │  │
-│  │ Single Page Application with 7 integrated views:      │  │ (http://localhost:5173)│  │
-│  │ 1. Tactical Context        5. Adaptive Scheduler      │  │ React 18 + TypeScript  │  │
-│  │ 2. RF / ESM Spectrum       6. Analytics & Benchmark   │  │ Vite + Tailwind CSS    │  │
-│  │ 3. Optical Surveillance    7. Simulation Center       │  │ SVG Radar + Alerts     │  │
-│  │ 4. Multi-Sensor Fusion                                │  │ Personnel Database     │  │
-│  └───────────────────────────────────────────────────────┘  └────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                          DEFENCE SENTINEL                                              │
+│                                                                                                        │
+│  ┌────────────────────────────────────────────────┐     ┌───────────────────────────────────────────┐  │
+│  │   PHYSICAL HARDWARE LAYER (ESP32 @ 115200)     │     │     C2 BACKEND SERVER (Node.js :8080)     │  │
+│  │                                                │     │                                           │  │
+│  │  - Stepper Motor (28BYJ-48 + ULN2003)          │     │  - Recency-Augmented UCB1 Band Scheduler │  │
+│  │  - Ultrasonic Sensor (HC-SR04, 2cm-400cm)      │     │  - 25 Hz Kinematics Simulation Engine     │  │
+│  │  - Motion Sensor (HC-SR501 PIR)                │     │  - Multi-Camera CV & Optical Context      │  │
+│  │  - RFID Access Control (MFRC522 SPI)           │     │  - 4-Layer Sensor Fusion Correlation      │  │
+│  │  - I2C OLED Display (SSD1306 128x64)           │     │  - Incident Management & Alert Dispatch   │  │
+│  │  - RGB LED (Common Cathode Status)             │     │  - 5-Scenario Statistical Benchmark Engine│  │
+│  └───────────────────────┬────────────────────────┘     └─────────────────────┬─────────────────────┘  │
+│                          │                                                    │                        │
+│                USB Web Serial API (COM / ttyUSB)                      WebSocket Stream                 │
+│                          │                                                    │                        │
+│                          ▼                                                    ▼                        │
+│  ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐  │
+│  │                              REACT COMMAND DASHBOARD (Vite :5173)                                │  │
+│  │                                                                                                  │  │
+│  │  ┌──────────────────────────────────────────┐    ┌────────────────────────────────────────────┐  │  │
+│  │  │   LIVE HARDWARE MODE (Web Serial Stream) │    │  C2 SIMULATION MODE (WebSocket Telemetry)  │  │  │
+│  │  │   - 180° Physical Sector Radar Visual    │    │  - 360° Tactical Command Radar Scope       │  │  │
+│  │  │   - Hysteresis Alarm Threshold (<50cm)   │    │  - 7-Page Full C2 Suite & Benchmark Visuals│  │  │
+│  │  │   - Web Audio Rapid Beep Alert Synth     │    │  - Real-time RF Spectrogram & Waterfall    │  │  │
+│  │  └──────────────────────────────────────────┘    └────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Hardware Prototype & Hardware Specifications
+
+The physical prototype is engineered to provide precise physical sector scanning and real-time obstacle telemetry to the C2 frontend.
+
+### Component Wiring & Pinout Table
+
+| Hardware Subsystem | Component Details | ESP32 GPIO Pin | Protocol / Signal |
+|---|---|---|---|
+| **Motor Drive** | 28BYJ-48 Stepper + ULN2003 Driver | `IN1: GPIO 14`, `IN2: GPIO 27`<br>`IN3: GPIO 26`, `IN4: GPIO 33` | 4-Step Half/Full Sequence |
+| **Ultrasonic Distance** | HC-SR04 Acoustic Sensor | `TRIG: GPIO 5`<br>`ECHO: GPIO 18` | Microsecond Timing Pulse |
+| **Motion Detector** | HC-SR501 PIR Sensor | `DATA: GPIO 16` | Digital High/Low Input |
+| **RFID Reader** | MFRC522 SPI Transceiver | `SDA: GPIO 4`, `SCK: GPIO 25`<br>`MOSI: GPIO 23`, `MISO: GPIO 17`<br>`RST: GPIO 32` | SPI Bus (`SPI.begin(25,17,23,4)`) |
+| **OLED Display** | SSD1306 0.96" 128x64 | `SDA: GPIO 21`<br>`SCL: GPIO 22` | I2C Bus (`0x3C`) |
+| **RGB Alert LED** | Common Cathode Tricolor LED | `RED: GPIO 15`, `GREEN: GPIO 2`, `BLUE: GPIO 0` | Active High PWM / Digital |
+| **Web Alert Sound** | Web Audio API Engine | Laptop Speakers | Synthesized 1.2kHz Beep Wave |
+
+### Web Serial Protocol Specification
+
+The ESP32 streams raw ASCII telemetry formatted as line-delimited key-value strings over USB Serial at **115200 baud (8N1)**:
+
+* `READY` — Firmware boot signal and hardware self-test complete.
+* `DATA <angle> <distance>` — Normal scan payload (e.g., `DATA 45 38` = 45° angle, 38cm distance).
+* `ALERT <angle> <distance>` — Distance dropped below **50 cm** (Triggers RED LED, OLED ALERT layout, and web audio beep).
+* `CLEAR` — Threat distance cleared past **55 cm** hysteresis limit (Restores GREEN LED and normal scan).
+* `RFID <uid>` — Card detected by MFRC522 scanner.
+
+### Dual Operational Modes
+
+The user interface allows instant switching between two distinct modes via header toggle controls:
+1. **LIVE HARDWARE MODE**: Connects directly to the ESP32 via Chrome/Edge Web Serial API. Renders real-time physical sweep angle, target distance, motion state, RFID card logs, and activates browser Web Audio alerts.
+2. **C2 SIMULATION MODE**: Connects via WebSockets to the Node.js C2 backend, feeding off synthetic 25Hz multi-sensor simulation data across 7 canonical threat entities.
+
+---
+
+## Mathematical Engine — Recency-Augmented UCB1
+
+**Core Implementation:** [`defense_radar_system/server/scheduler_engine.js`](file:///a:/Amar/Work/SIH/Defence-Sentinel-main/Defence-Sentinel-main/defense_radar_system/server/scheduler_engine.js)
+
+Standard Upper Confidence Bound (UCB1) algorithms assume stationary reward distributions. In Electronic Warfare (EW), threat emitters hop frequencies dynamically and emit short bursts. To guarantee fast re-observation of frequency-agile threats without starving unvisited bands, our algorithm introduces a non-stationary **recency-augmentation term**.
+
+### Composite Score Formula
+
+The band selection score $Q(b)$ for candidate frequency band $b$ at time $t$ is defined by:
+
+$$Q(b) = \hat{\mu}_b + c \cdot \sqrt{\frac{\ln N}{N_b}} + \lambda \cdot \tanh\!\left(\frac{\Delta t_b}{\tau}\right)$$
+
+Where:
+- $\hat{\mu}_b = \frac{\alpha_b}{\alpha_b + \beta_b}$: Bayesian posterior mean detection probability computed from dynamic Beta distributions.
+- $c \cdot \sqrt{\frac{\ln N}{N_b}}$: Standard UCB exploration term ($c = \sqrt{2} \approx 1.414$, $N$ total dwells, $N_b$ dwells on band $b$).
+- $\lambda \cdot \tanh\!\left(\frac{\Delta t_b}{\tau}\right)$: **Recency augmentation penalty/boost** ($\lambda = 0.20$, aging constant $\tau = 5.0\text{ s}$, $\Delta t_b$ elapsed time since band $b$ was last scanned).
 
 ---
 
 ## 7-Page Command & Control Suite
 
-| # | Page | Key Visual & Functional Features |
-|---|---|---|
-| **1** | **Tactical Context** | 360° rotating radar sweep, 7 canonical tracks with motion trails, 450m perimeter warning zone, personnel database panel, live alerts feed. |
-| **2** | **RF / ESM** | Dynamic RF spectrum analyzer, 75-row waterfall spectrogram, live receiver telemetry (tuned freq, IBW, SNR, power, state), RF burst timeline. |
-| **3** | **Optical Context** | 4 switchable surveillance cameras (CAM-01 to CAM-04), canvas IR rendering, CV detection bounding boxes, optical correlation panel, optical event timeline. |
-| **4** | **Sensor Fusion** | 7-entity multi-sensor correlation matrix, Radar + Optical + RF + Personnel evidence weighting, 7-step causal reasoning trace. |
-| **5** | **Adaptive Scheduler** | 5-band state table, 24-dwell hit/miss history bar, dynamic Bayesian Beta distributions, priority comparison ranking, "Why This Band" attribution, 4 ablation modes (`FULL_ADAPTIVE`, `UCB_ONLY`, `NO_EXPLORATION`, `OPEN_LOOP`). |
-| **6** | **Analytics & Benchmark** | 6 verified metric cards (Detection Rate, Latency, FAR, Accuracy, Utilization, Sensitivity), 5-scenario benchmark breakdown table, cumulative interception chart, interactive experiments with deterministic replay, JSON / CSV / Report REST exports. |
-| **7** | **Multi-Sensor Simulation** | Scenario controls, execution controls (Pause, Resume, Step, Reset), speed multipliers (1x, 2x, 5x), subsystem health badges, live JSON telemetry inspector, 12-step automated demo runner. |
+| # | Page Name | Primary Capability & Key Features |
+|:---:|---|---|
+| **1** | **Tactical Context** | 360° rotating sweep radar, sector scanning, 7 canonical tracks with kinematic movement, 450m breach warning perimeter, personnel access authorization panel. |
+| **2** | **RF / ESM** | Dynamic RF spectrum visualizer, 75-row waterfall spectrogram, live receiver telemetry (frequency, bandwidth, SNR, power), RF burst timeline. |
+| **3** | **Optical Context** | 4 switchable surveillance cameras (CAM-01 to CAM-04), synthetic infrared thermal canvas rendering, CV object bounding boxes, camera correlation panel. |
+| **4** | **Sensor Fusion** | Multi-sensor correlation matrix combining Radar + Optical + RF + RFID evidence layers into unified threat confidence scores. |
+| **5** | **Adaptive Scheduler** | Band state table, 24-dwell hit/miss history bar, Bayesian Beta distribution curve visualization, priority comparison ranking, and 4 scheduler ablation toggles. |
+| **6** | **Analytics & Benchmark** | 6 verified metrics (Detection Rate, Latency, FAR, Accuracy, Utilization, Sensitivity), 5-scenario statistical benchmark suite, CSV/JSON report exports. |
+| **7** | **Simulation Center** | Execution controls (Pause, Resume, Step, Reset), speed multipliers (1x, 2x, 5x), live JSON stream inspector, 12-step guided automated demonstration. |
 
 ---
 
-## Project Structure
+## Multi-Sensor Fusion & Threat Matrix
+
+| Entity ID | Entity Type | Classification | Fusion Status & Description |
+|---|---|---|---|
+| **TRK-014** | PERSON | ✅ VERIFIED | Lt. R. Sharma (TAG-ALPHA-01) — Authorized Friendly Patrol |
+| **TRK-007** | PERSON | ✅ VERIFIED | Sep. K. Patel (TAG-CHARLIE-01) — Base Maintenance Staff |
+| **TRK-042** | PERSON | ✅ VERIFIED | Hav. D. Singh (TAG-BRAVO-02) — Perimeter Watchman |
+| **TRK-033** | VEHICLE | ✅ VERIFIED | Quick Reaction Team Vehicle 4 (TAG-VEHICLE-04) |
+| **TRK-021** | PERSON | 🔴 ANOMALOUS | **Perimeter Intruder** — Unmatched tag inside 450m restricted zone |
+| **TRK-055** | ANOMALOUS_OBJECT | 🔴 ANOMALOUS | Unknown drone/quadcopter emitting burst RF telemetry |
+| **TRK-019** | WILDLIFE | 🟡 WILDLIFE | Non-threatening fauna movement near outer fence |
+
+---
+
+## 12-Step Guided Demonstration
+
+The platform includes an automated 12-step tactical demonstration available directly in the Simulation Control Center:
+
+1. **Step 1**: Baseline Tactical Monitoring initialized.
+2. **Step 2**: Primary radar track detection established.
+3. **Step 3**: Camera handoff and optical correlation engaged.
+4. **Step 4**: Procedural infrared thermal feed locks onto perimeter sector.
+5. **Step 5**: RF emitter detection and signal burst logged in ESM queue.
+6. **Step 6**: Multi-sensor fusion engine correlates 4 evidence layers.
+7. **Step 7**: Threat anomaly identified for TRK-021.
+8. **Step 8**: Recency UCB1 scheduler shifts to agile band tracking.
+9. **Step 9**: Dwell time automatically allocated to active threat frequency.
+10. **Step 10**: Simulated security alert generated and logged.
+11. **Step 11**: Quick Reaction Team (QRT) dispatch trigger sent.
+12. **Step 12**: Operational state confirms `ANOMALY VERIFICATION ENGAGED`.
+
+---
+
+## Project Directory Layout
 
 ```
 Defence-Sentinel/
+├── docs/
+│   └── assets/
+│       ├── hardware_prototype.jpg   # Physical ESP32 Hardware Photo
+│       └── radar_dashboard.png      # C2 Tactical Radar Screenshot
 │
-├── defense_radar_system/          # Module 1 — ESM-ASTRA Node.js Backend & Dashboard
-│   ├── server.js                  # Main Express + WebSocket server
+├── hardware/
+│   └── defense_sentinel_hardware/
+│       └── defense_sentinel_hardware.ino  # Complete ESP32 C++ Firmware
+│
+├── defense_radar_system/            # Module 1 — Node.js C2 Server & Dashboard
+│   ├── server.js                    # Express + WebSocket Application Entry
 │   ├── package.json
-│   ├── server/
-│   │   ├── scheduler_engine.js    # Recency-Augmented UCB1 scheduler (CORE)
-│   │   ├── benchmark_runner.js    # 5-scenario statistical benchmark runner
-│   │   ├── incident_engine.js     # Security alert & incident management
-│   │   └── prng.js                # Deterministic Mulberry32 PRNG
-│   ├── public/                    # Tactical Command Dashboard SPA
-│   │   ├── index.html             # 7-page C2 unified interface
-│   │   └── js/
-│   │       ├── app.js             # SPA orchestrator & WebSocket handler
-│   │       ├── radar.js           # Tactical radar scope canvas renderer
-│   │       ├── spectrum.js        # RF spectrum & waterfall spectrogram
-│   │       ├── camera.js          # Optical monitor & IR simulation
-│   │       └── analytics.js       # Benchmark charts & metric calculation
-│   └── test/
-│       ├── run_all_tests.js       # 13-suite core automated runner (Suites A–M)
-│       └── test_*.js              # Headless browser & E2E acceptance test suites
+│   ├── server/                      # Engine Subsystems
+│   │   ├── scheduler_engine.js      # Recency UCB1 Scheduler (CORE)
+│   │   ├── benchmark_runner.js      # 5-Scenario Statistical Engine
+│   │   ├── incident_engine.js       # Alert & Security Incident Logging
+│   │   └── prng.js                  # Mulberry32 Deterministic PRNG
+│   ├── public/                      # Tactical Command Dashboard SPA
+│   └── test/                        # 13 Automated Test Suites (A–M)
 │
-├── radar-scanner/                 # Module 2 — React Radar Scanner
+├── radar-scanner/                   # Module 2 — React Radar Scanner Frontend
 │   ├── src/
-│   │   ├── App.tsx                # Main application component
-│   │   ├── main.tsx               # Entry point
-│   │   ├── components/            # RadarScope, TrackList, AlertsPanel, etc.
-│   │   └── hooks/                 # useC2Backend, useAlerts, usePersonnel, etc.
+│   │   ├── App.tsx                  # Root Container & Mode Switcher
+│   │   ├── components/              # Tactical & Hardware Scope Components
+│   │   │   ├── HardwareRadarScope.tsx # 180° Hardware Sector Scope
+│   │   │   ├── RadarScope.tsx       # 360° Simulation Radar Scope
+│   │   │   └── AlertsPanel.tsx
+│   │   └── hooks/
+│   │       ├── useHardwareSerial.ts # Web Serial API & Sound Synth
+│   │       └── useC2Backend.ts      # WebSocket Telemetry Stream
 │   ├── package.json
-│   ├── vite.config.ts
-│   └── tsconfig.json
+│   └── vite.config.ts
 │
 └── README.md
 ```
 
 ---
 
-## Core Algorithm — Recency-Augmented UCB1
+## Quick Start & Hardware Setup Guide
 
-**File:** `defense_radar_system/server/scheduler_engine.js`
+### 1. ESP32 Firmware Flashing
 
-Standard Upper Confidence Bound (UCB1) algorithms assume stationary reward distributions. However, electronic warfare threats are **frequency-agile** and **bursty** — emitters transmit in pulses and hop across channels.
+1. Open `hardware/defense_sentinel_hardware/defense_sentinel_hardware.ino` in the Arduino IDE.
+2. Select **Board**: `ESP32 Dev Module` and set baud rate to `115200`.
+3. Install dependencies via Library Manager:
+   - `Adafruit SSD1306` & `Adafruit GFX Library`
+   - `MFRC522` by RFIDRead
+4. Connect ESP32 via USB and click **Upload**.
 
-### Mathematical Formulation
-
-The composite selection score $Q(b)$ for candidate frequency band $b$ is computed as:
-
-$$Q(b) = \hat{\mu}_b + c \cdot \sqrt{\frac{\ln N}{N_b}} + \lambda \cdot \tanh\!\left(\frac{\Delta t_b}{\tau}\right)$$
-
-Where:
-- $\hat{\mu}_b$: Bayesian posterior mean reward ($\frac{\alpha_b}{\alpha_b + \beta_b}$)
-- $c \cdot \sqrt{\frac{\ln N}{N_b}}$: Standard UCB exploration term ($c = \sqrt{2} \approx 1.414$)
-- $\lambda \cdot \tanh\!\left(\frac{\Delta t_b}{\tau}\right)$: **Recency augmentation term** ($\lambda = 0.20$, $\tau = 5.0\text{ s}$)
-
-### Ablation Modes
-
-The scheduler supports dynamic switching across 4 ablation modes:
-1. `FULL_ADAPTIVE`: Full Recency-Augmented UCB1 with aging term.
-2. `UCB_ONLY`: Classical UCB1 without recency term ($\lambda = 0$).
-3. `NO_EXPLORATION`: Greedy exploitation of empirical reward ($c = 0$, $\lambda = 0$).
-4. `OPEN_LOOP`: Fixed round-robin sequential scanning.
-
----
-
-## Multi-Sensor Fusion & Incident Response
-
-### 7 Canonical Entities
-
-| Entity ID | Type | Classification | Details |
-|---|---|---|---|
-| **TRK-014** | PERSON | ✅ VERIFIED | Lt. R. Sharma (TAG-ALPHA-01) — Friendly Patrol |
-| **TRK-007** | PERSON | ✅ VERIFIED | Sep. K. Patel (TAG-CHARLIE-01) — Friendly Staff |
-| **TRK-042** | PERSON | ✅ VERIFIED | Hav. D. Singh (TAG-BRAVO-02) — Perimeter Guard |
-| **TRK-033** | VEHICLE | ✅ VERIFIED | QRT Patrol Vehicle 4 (TAG-VEHICLE-04) |
-| **TRK-021** | PERSON | 🔴 ANOMALOUS | **Perimeter Intruder (Suspect)** — Unmatched tag inside 450m |
-| **TRK-055** | ANOMALOUS_OBJECT | 🔴 ANOMALOUS | Unknown drone/object with anomalous RF signature |
-| **TRK-019** | WILDLIFE | 🟡 WILDLIFE | Low RCS, non-threatening movement |
-
----
-
-## 12-Step Integrated Demonstration
-
-The Multi-Sensor Simulation Center features an automated 12-step guided demonstration:
-1. **Step 1/12**: Baseline Tactical Monitoring initialized.
-2. **Step 2/12**: Radar track detection established.
-3. **Step 3/12**: Camera handoff and optical correlation engaged.
-4. **Step 4/12**: Procedural infrared feed locks onto sector.
-5. **Step 5/12**: RF emitter detection and signal burst logged.
-6. **Step 6/12**: Multi-sensor fusion correlates 4 evidence layers.
-7. **Step 7/12**: Threat anomaly identified for TRK-021.
-8. **Step 8/12**: Scheduler switches to agile band tracking.
-9. **Step 9/12**: Dwell time maximized on threat frequency.
-10. **Step 10/12**: Simulated security alert generated.
-11. **Step 11/12**: QRT simulated incident dispatch triggered.
-12. **Step 12/12**: Operational state engages `ANOMALY VERIFICATION ENGAGED`.
-
----
-
-## Quick Start
-
-### 1. Start the C2 Backend & Main Dashboard (Port 8080)
+### 2. C2 Backend Server (Port 8080)
 
 ```bash
 cd defense_radar_system
 npm install
 node server.js
 ```
+* Access C2 Command Dashboard at: **`http://localhost:8080`**
 
-Open: **http://localhost:8080**
+### 3. React Radar Scanner Frontend (Port 5173)
 
-### 2. Start the React Radar Scanner (Port 5173)
-
-Open a second terminal:
+In a second terminal window:
 
 ```bash
 cd radar-scanner
 npm install
 npm run dev -- --host
 ```
-
-Open: **http://localhost:5173**
+* Access React Radar Scanner at: **`http://localhost:5173`**
+* Click **CONNECT HARDWARE** to pair with the ESP32 over Web Serial API, or toggle to **C2 SIMULATION** for full system testing.
 
 ---
 
-## Automated & Live Acceptance Test Suite
+## Verification & Automated Test Suite
 
-### Run All 13 Core Test Suites (A to M)
+Run the full suite of **13 Automated Acceptance Test Suites (Suites A to M)**:
 
 ```bash
 cd defense_radar_system
 node test/run_all_tests.js
 ```
 
-| Suite | Description | Status |
-|---|---|---|
-| **Suite A** | PRNG Determinism (Mulberry32) | ✅ PASS |
-| **Suite B** | Scheduler UCB Mathematical Formula | ✅ PASS |
-| **Suite C** | Beta Posterior Probability Updates | ✅ PASS |
-| **Suite D** | Unvisited Band Exploration Guarantee | ✅ PASS |
-| **Suite E** | Stationary Environment Convergence | ✅ PASS |
-| **Suite F** | Deterministic Single-Timeline Replay | ✅ PASS |
+### Test Suite Execution Summary
+
+| Suite ID | Subsystem Tested | Verification Status |
+|:---:|---|:---:|
+| **Suite A** | PRNG Mulberry32 Seeded Determinism | ✅ PASS |
+| **Suite B** | Recency UCB1 Mathematical Formula Output | ✅ PASS |
+| **Suite C** | Bayesian Beta Posterior Distribution Updates | ✅ PASS |
+| **Suite D** | Unvisited Frequency Exploration Guarantee | ✅ PASS |
+| **Suite E** | Stationary Environment Bandit Convergence | ✅ PASS |
+| **Suite F** | Deterministic Replay Verification | ✅ PASS |
 | **Suite G** | Metric Calculations & Brier Score Validation | ✅ PASS |
 | **Suite H** | Single Source of Truth Entity Synchronization | ✅ PASS |
-| **Suite I** | Experimental Benchmark Engine & 5-Scenario Suite | ✅ PASS |
+| **Suite I** | 5-Scenario Comprehensive Benchmark Engine | ✅ PASS |
 | **Suite J** | Adaptive Learning Loop & Causal Decision Trace | ✅ PASS |
 | **Suite K** | Robustness Engine & Failure-Injection Suite | ✅ PASS |
-| **Suite L** | Simulated Security Alert & Incident Engine | ✅ PASS |
+| **Suite L** | Security Alert & Incident Engine Logging | ✅ PASS |
 | **Suite M** | Phase 3 RF Telemetry & C2 WebSocket Sync | ✅ PASS |
 
-### Run Full End-to-End Presentation Acceptance
-
-Executes an automated headless browser session that verifies all 7 pages, the 12-step demo, zero-refresh presentation flow, console audit, and backend reconnection:
-
-```bash
-cd defense_radar_system
-node test/test_final_presentation_acceptance.js
-```
-
 ---
 
-## API Reference
+## API Documentation
 
-| Endpoint | Method | Description |
+| Endpoint | Method | Response / Action Description |
 |---|---|---|
-| `/api/status` | `GET` | Snapshot of radar, RF, scheduler, and simulation state |
-| `/api/sitrep` | `GET` | Formatted tactical situation report |
-| `/api/entities` | `GET` | Array of 7 canonical entities with multi-sensor evidence |
-| `/api/analytics` | `GET` | Current scheduler benchmarks and metric calculations |
-| `/api/benchmark/suite` | `POST` | Execute 5-scenario comprehensive benchmark suite |
-| `/api/benchmark/export?format=json` | `GET` | Export benchmark results as JSON |
-| `/api/benchmark/export?format=csv` | `GET` | Export benchmark results as CSV |
-| `/api/benchmark/export?format=report` | `GET` | Export benchmark results as text report |
-| `/api/incidents` | `GET` | Active simulated incidents and audit trails |
-| `/api/reset` | `POST` | Reset simulation state and re-seed entities |
-| `/api/scenario/:name` | `POST` | Switch active simulation scenario |
+| `/api/status` | `GET` | Snapshot of current system status, mode, and health badges |
+| `/api/sitrep` | `GET` | Formatted military situation report (SITREP) |
+| `/api/entities` | `GET` | Array of all 7 threat entities with fused sensor telemetry |
+| `/api/analytics` | `GET` | Real-time scheduler metrics (Detection rate, FAR, Latency) |
+| `/api/benchmark/suite` | `POST` | Executes full 5-scenario statistical benchmark run |
+| `/api/benchmark/export?format=json` | `GET` | Exports benchmark results as raw JSON |
+| `/api/benchmark/export?format=csv` | `GET` | Exports benchmark results as structured CSV |
+| `/api/benchmark/export?format=report` | `GET` | Exports formatted text benchmark audit report |
+| `/api/incidents` | `GET` | History of logged security incidents and alert traces |
+| `/api/reset` | `POST` | Resets simulation time and re-seeds canonical entities |
 
 ---
 
-## Disclaimer & Team
+## License & Disclaimer
 
-This project is a **software simulation prototype** developed for the **Smart India Hackathon 2026** under Problem Statement **SIH26055** (*Adaptive Scan Strategy for Electronic Warfare*).
+This software system and prototype were created for the **Smart India Hackathon 2026** under Problem Statement **SIH26055** (*Adaptive Scan Strategy for Electronic Warfare*).
 
-- All radar signals, optical feeds, RF spectra, and incidents are synthetic simulations.
-- It is **not connected** to real defense hardware, weapons systems, or operational radar networks.
-- All personnel profiles and incident logs are fictional demonstration data.
+- All radar signals, optical feeds, RF spectra, and target paths are synthetic simulations.
+- Not intended for direct operational or tactical military deployment without hardware integration qualification.
 
-### License
-MIT License. See [LICENSE](LICENSE) for details.
+**License**: Distributed under the [MIT License](LICENSE).
