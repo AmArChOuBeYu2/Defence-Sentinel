@@ -13,7 +13,7 @@ const { AdaptiveScanScheduler, RecencyAugmentedUCB1Scheduler, OpenLoopSequential
 const { BenchmarkRunner } = require('./server/benchmark_runner');
 const { IncidentEngine } = require('./server/incident_engine');
 
-const incidentEngine = new IncidentEngine();
+let incidentEngine = new IncidentEngine();
 
 const app = express();
 const server = http.createServer(app);
