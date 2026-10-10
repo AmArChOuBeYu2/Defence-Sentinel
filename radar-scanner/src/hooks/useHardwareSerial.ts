@@ -66,7 +66,7 @@ class WebAudioAlarmController {
         osc.type = 'square';
         osc.frequency.setValueAtTime(1200, this.ctx.currentTime); // 1.2kHz piercing alert pitch
 
-        // Sharp digital ON/OFF pulse (no musical beat fade)
+        // Sharp digital ON/OFF pulse
         gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
         gain.gain.setValueAtTime(0.0001, this.ctx.currentTime + 0.12); // 120ms sharp beep
 
@@ -81,7 +81,6 @@ class WebAudioAlarmController {
     };
 
     playBeep();
-    // Rapid repeating alert beep pulse (120ms beep + 80ms pause)
     this.timer = setInterval(playBeep, 200);
   }
 
@@ -113,7 +112,7 @@ export function useHardwareSerial(onHardwareBreach?: (track: Track) => void): Ha
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
 
   const portRef = useRef<any>(null);
-  const readerRef = useRef<ReadableStreamDefaultReader<string> | null>(null);
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
   const keepReadingRef = useRef<boolean>(false);
   const lastAlertTimeRef = useRef<number>(0);
 
@@ -157,132 +156,185 @@ export function useHardwareSerial(onHardwareBreach?: (track: Track) => void): Ha
     });
   }, [isIntrusion]);
 
+  const triggerBreachAlert = useCallback((parsedAngle: number, effectiveDist: number) => {
+    if (onHardwareBreach) {
+      const now = Date.now();
+      if (now - lastAlertTimeRef.current > ALERT_COOLDOWN_MS) {
+        lastAlertTimeRef.current = now;
+        const rad = (parsedAngle * Math.PI) / 180;
+        const hwTrack: Track = {
+          id: 'HW-RADAR-01',
+          type: 'UNKNOWN_OBJECT',
+          x: (effectiveDist / 100) * Math.sin(rad),
+          y: (effectiveDist / 100) * Math.cos(rad),
+          bearing: parsedAngle,
+          distance: effectiveDist,
+          speed: 0,
+          heading: 0,
+          confidence: 98,
+          firstDetected: now,
+          lastSeen: now,
+          trail: [],
+          insidePerimeter: true,
+          alertFired: true,
+        };
+        onHardwareBreach(hwTrack);
+      }
+    }
+  }, [onHardwareBreach]);
+
   const processLine = useCallback((line: string) => {
     const trimmed = line.trim();
     if (!trimmed) return;
 
-    const parts = trimmed.split(',');
-    const header = parts[0]?.toUpperCase();
+    setTelemetryStale(false);
+    setLastUpdate(Date.now());
 
-    if (header === 'READY') {
-      setStatusMsg('ESP32 HARDWARE READY');
-      setTelemetryStale(false);
-      setLastUpdate(Date.now());
-    } else if (header === 'DATA' && parts.length >= 3) {
-      const parsedAngle = parseFloat(parts[1]);
-      const parsedDist = parseFloat(parts[2]);
-      const parsedPir = parts.length >= 4 ? parseInt(parts[3], 10) : 0;
-      const parsedRfid = parts.length >= 5 ? parts[4] : '0';
+    // 1. Structured CSV Protocol Parsing (e.g., READY | DATA,0,23.4,0 | ALERT,0,15.2,1)
+    if (trimmed.includes(',')) {
+      const parts = trimmed.split(',');
+      const header = parts[0]?.toUpperCase();
 
-      if (!isNaN(parsedAngle) && !isNaN(parsedDist)) {
-        setAngle(parsedAngle);
-        setDistanceCm(parsedDist);
-        setPir(isNaN(parsedPir) ? 0 : parsedPir);
-        setRfid(parsedRfid);
-        setLastUpdate(Date.now());
-        setTelemetryStale(false);
-
-        // Update target history for valid detected objects (< 290 cm)
-        if (parsedDist < 290.0 && parsedDist > 1.5) {
-          setTargetHistory(prev => {
-            const next = [{ angle: parsedAngle, distanceCm: parsedDist, timestamp: Date.now() }, ...prev];
-            return next.slice(0, 15);
-          });
-        }
+      if (header === 'READY') {
+        setStatusMsg('ESP32 HARDWARE READY');
+        setConnected(true);
+        return;
       }
-    } else if (header === 'ALERT' && parts.length >= 3) {
-      const parsedAngle = parseFloat(parts[1]);
-      const parsedDist = parseFloat(parts[2]);
 
-      if (!isNaN(parsedAngle) && !isNaN(parsedDist)) {
-        setAngle(parsedAngle);
-        setDistanceCm(parsedDist);
-        setIsIntrusion(true);
-        setStatusMsg('INTRUSION DETECTED');
-        setLastUpdate(Date.now());
-        setTelemetryStale(false);
+      if (header === 'DATA' || header === 'ALERT' || header === 'CLEAR') {
+        let parsedAngle = 0;
+        let parsedDist = -1;
+        let parsedPir = 0;
+        let parsedRfid = '0';
 
-        // Trigger debounced breach alert for React alert panel
-        if (onHardwareBreach) {
-          const now = Date.now();
-          if (now - lastAlertTimeRef.current > ALERT_COOLDOWN_MS) {
-            lastAlertTimeRef.current = now;
-            const rad = (parsedAngle * Math.PI) / 180;
-            const hwTrack: Track = {
-              id: 'HW-RADAR-01',
-              type: 'UNKNOWN_OBJECT',
-              x: (parsedDist / 100) * Math.sin(rad),
-              y: (parsedDist / 100) * Math.cos(rad),
-              bearing: parsedAngle,
-              distance: parsedDist,
-              speed: 0,
-              heading: 0,
-              confidence: 98,
-              firstDetected: now,
-              lastSeen: now,
-              trail: [],
-              insidePerimeter: true,
-              alertFired: true,
-            };
-            onHardwareBreach(hwTrack);
+        if (parts.length === 3) {
+          // Format: DATA,distance_cm,motion
+          parsedAngle = 0;
+          parsedDist = parseFloat(parts[1]);
+          parsedPir = parseInt(parts[2], 10);
+        } else if (parts.length >= 4) {
+          // Format: DATA,angle,distance_cm,motion[,rfid]
+          parsedAngle = parseFloat(parts[1]) || 0;
+          parsedDist = parseFloat(parts[2]);
+          parsedPir = parseInt(parts[3], 10) || 0;
+          parsedRfid = parts[4] || '0';
+        }
+
+        if (!isNaN(parsedDist)) {
+          // Normalize negative distance (no echo) to 300cm clear
+          const effectiveDist = parsedDist <= 0 ? 300 : parsedDist;
+          setAngle(parsedAngle);
+          setDistanceCm(effectiveDist);
+          setPir(isNaN(parsedPir) ? 0 : parsedPir);
+          setRfid(parsedRfid);
+
+          const isAlertHeader = header === 'ALERT' || parsedPir === 1 || (effectiveDist > 0 && effectiveDist < 50);
+
+          if (isAlertHeader) {
+            setIsIntrusion(true);
+            setStatusMsg('INTRUSION DETECTED');
+            triggerBreachAlert(parsedAngle, effectiveDist);
+          } else {
+            setIsIntrusion(false);
+            setStatusMsg('ESP32 LIVE');
+          }
+
+          if (effectiveDist < 290.0 && effectiveDist > 1.5) {
+            setTargetHistory(prev => [
+              { angle: parsedAngle, distanceCm: effectiveDist, timestamp: Date.now() },
+              ...prev
+            ].slice(0, 15));
           }
         }
+        return;
       }
-    } else if (header === 'CLEAR' && parts.length >= 3) {
-      const parsedAngle = parseFloat(parts[1]);
-      const parsedDist = parseFloat(parts[2]);
-      if (!isNaN(parsedAngle) && !isNaN(parsedDist)) {
-        setAngle(parsedAngle);
-        setDistanceCm(parsedDist);
-      }
-      setIsIntrusion(false);
-      setStatusMsg('SCANNING MODE');
-      setLastUpdate(Date.now());
-      setTelemetryStale(false);
-    } else if (header === 'RFID' && parts.length >= 2) {
-      const tag = parts[1];
-      setRfid(tag);
-      setStatusMsg(`RFID CARD DETECTED: ${tag}`);
-    }
-  }, [onHardwareBreach]);
 
-  const disconnect = useCallback(async () => {
-    alarmSynth.stopAlarm();
+      if (header === 'RFID' && parts.length >= 2) {
+        const tag = parts[1];
+        setRfid(tag);
+        setStatusMsg(`RFID CARD DETECTED: ${tag}`);
+        return;
+      }
+    }
+
+    // 2. Fallback Parsing for Human-Readable Text (e.g. "Distance: 23.4 cm | Motion: NONE")
+    const distMatch = trimmed.match(/Distance:\s*([\d.-]+|No echo)/i);
+    const motionMatch = trimmed.match(/Motion:\s*(DETECTED|NONE|ALERT|1|0)/i);
+
+    if (distMatch || motionMatch) {
+      let parsedDist = 300;
+      if (distMatch && distMatch[1] && distMatch[1] !== 'No echo') {
+        const d = parseFloat(distMatch[1]);
+        if (!isNaN(d) && d > 0) parsedDist = d;
+      }
+
+      let parsedPir = 0;
+      if (motionMatch && (motionMatch[1].toUpperCase() === 'DETECTED' || motionMatch[1] === '1' || motionMatch[1].toUpperCase() === 'ALERT')) {
+        parsedPir = 1;
+      }
+
+      setDistanceCm(parsedDist);
+      setPir(parsedPir);
+
+      const isThreat = parsedPir === 1 || (parsedDist > 0 && parsedDist < 50);
+      setIsIntrusion(isThreat);
+      setStatusMsg(isThreat ? 'INTRUSION DETECTED' : 'ESP32 LIVE');
+
+      if (isThreat) {
+        triggerBreachAlert(0, parsedDist);
+      }
+    }
+  }, [triggerBreachAlert]);
+
+  const cleanupSerial = useCallback(async () => {
     keepReadingRef.current = false;
 
     if (readerRef.current) {
       try {
         await readerRef.current.cancel();
-      } catch {
+      } catch (err) {
+        /* ignore */
+      }
+      try {
+        readerRef.current.releaseLock();
+      } catch (err) {
         /* ignore */
       }
       readerRef.current = null;
     }
+
     if (portRef.current) {
       try {
         await portRef.current.close();
-      } catch {
+      } catch (err) {
         /* ignore */
       }
       portRef.current = null;
     }
+  }, []);
 
+  const disconnect = useCallback(async () => {
+    alarmSynth.stopAlarm();
+    await cleanupSerial();
     setConnected(false);
     setConnecting(false);
     setIsIntrusion(false);
     setTelemetryStale(true);
     setStatusMsg('DISCONNECTED');
-  }, []);
+  }, [cleanupSerial]);
 
   const connect = useCallback(async () => {
     if (!('serial' in navigator)) {
-      setError('Web Serial API is not supported in this browser. Please use Chrome or Edge.');
+      setError('Web Serial API is not supported in this browser. Please use Chrome or Edge via localhost or HTTPS.');
       return;
     }
 
     try {
       setError(null);
       setConnecting(true);
+
+      // Clean up any existing stale port or reader connection first
+      await cleanupSerial();
 
       const port = await (navigator as any).serial.requestPort();
       await port.open({ baudRate: 115200 });
@@ -293,40 +345,48 @@ export function useHardwareSerial(onHardwareBreach?: (track: Track) => void): Ha
       setStatusMsg('ESP32 LIVE');
 
       keepReadingRef.current = true;
-      const textDecoder = new TextDecoderStream();
-      port.readable.pipeTo(textDecoder.writable).catch(() => {});
-      const reader = textDecoder.readable.getReader();
+      const decoder = new TextDecoder('utf-8');
+      const reader: ReadableStreamDefaultReader<Uint8Array> = port.readable.getReader();
       readerRef.current = reader;
 
       let buffer = '';
 
       while (keepReadingRef.current) {
-        const { value, done } = await reader.read();
-        if (done) {
-          break;
-        }
-        if (value) {
-          buffer += value;
-          const lines = buffer.split(/\r?\n/);
-          buffer = lines.pop() || '';
-          for (const line of lines) {
-            processLine(line);
+        try {
+          const { value, done } = await reader.read();
+          if (done) {
+            break;
           }
+          if (value) {
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              processLine(line);
+            }
+          }
+        } catch (readErr: any) {
+          console.warn('Transient serial read error (framing/parity):', readErr);
+          // Wait briefly on transient framing error chunk and continue reading loop safely
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
     } catch (err: any) {
       console.warn('Web Serial connection error:', err);
-      if (err.name !== 'NotFoundError') {
-        const msg = err.message || '';
-        if (msg.includes('Failed to open serial port') || msg.includes('open')) {
-          setError('COM port is in use or locked. Please CLOSE Arduino Serial Monitor, VSCode, or any other app using the COM port, then click Connect again.');
-        } else {
-          setError(msg || 'Failed to connect to ESP32 serial port.');
-        }
+      const msg = err?.message || String(err);
+      if (err?.name === 'NotFoundError') {
+        setError(null); // User canceled port selection dialog
+      } else if (msg.includes('Failed to open serial port') || msg.includes('locked') || msg.includes('in use') || err?.name === 'InvalidStateError') {
+        setError('COM port is in use or locked. Please CLOSE Arduino Serial Monitor, VSCode, or any other app using the COM port, then click Connect again.');
+      } else if (msg.includes('Framing error') || err?.name === 'FramingError') {
+        setError('Serial Framing Error detected. Please verify baud rate is 115200 and reconnect.');
+      } else {
+        setError(msg || 'Failed to connect to ESP32 serial port.');
       }
       await disconnect();
     }
-  }, [disconnect, processLine]);
+  }, [cleanupSerial, disconnect, processLine]);
 
   const connectionState: HardwareConnectionState = !connected
     ? 'DISCONNECTED'
